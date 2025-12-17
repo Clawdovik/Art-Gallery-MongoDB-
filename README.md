@@ -31,6 +31,7 @@ CORS — настройка доступа для фронтенда.
 Клонируйте репозиторий (или распакуйте архив):
 
 git clone https://github.com/Clawdovik/Art-Gallery-MongoDB-
+
 cd trade-app
 
 Установите зависимости: Выполните команду в корневой папке проекта:
@@ -51,3 +52,4 @@ node server.js
 
 Connected to the database!
 Server is running on port 8080.
+
