@@ -1,0 +1,29 @@
+\---trade-app
+    |   .env
+    |   ArtGallery.url
+    |   AuthTest.url
+    |   cascade.txt
+    |   MongoDB-Cloud.txt
+    |   package-lock.json
+    |   package.json
+    |   Password.txt
+    |   README.md
+    |   server.js
+    |   start.server.bat
+    |
+    +---app
+    |   +---config
+    |   |       db.config.js
+    |   |
+    |   +---models
+    |   |       artist.model.js
+    |   |       exhibition.model.js
+    |   |       index.js
+    |   |       picture.model.js
+    |   |       user.model.js
+    |   |
+    |   \---seeders
+    |           initialData.js
+    |
+    \---public
+            index.html

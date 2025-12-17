@@ -1,0 +1,10 @@
+TRUNCATE TABLE 
+    users,              
+    artists,            
+    pictures,           
+    exhibitions,        
+    exhibition_pictures, 
+    goodsgroups,       
+    user_sessions       
+RESTART IDENTITY        
+CASCADE;

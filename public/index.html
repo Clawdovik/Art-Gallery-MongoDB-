@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Картинная галерея</title>
+    <style>
+        /* ================================================= */
+        /* === СТИЛИ: ТЕМНЫЙ ФОН И ПАРАЛЛАКС === */
+        /* ================================================= */
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #1a1a2e; 
+            min-height: 200vh;
+            padding: 20px;
+            color: #f4f4f4; 
+            position: relative;
+            overflow-x: hidden;
+            transition: background-color 0.5s;
+        }
+        
+        .parallax-item {
+            position: absolute;
+            font-size: 8em; 
+            opacity: 0.25; 
+            z-index: -1;
+            will-change: transform;
+            color: #4a4a7e; 
+            text-shadow: 0 0 10px rgba(74, 74, 126, 0.5);
+        }
+        .brush1 { top: 20vh; left: 10vw; }
+        .brush1::before { content: '🖌️'; }
+        .paint-tube { top: 60vh; right: 15vw; }
+        .paint-tube::before { content: '🌌'; } 
+        .brush2 { top: 120vh; left: 20vw; }
+        .brush2::before { content: '✨'; }
+        .star { top: 150vh; right: 5vw; font-size: 5em; opacity: 0.15; }
+        .star::before { content: '⭐'; }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: #f4f4f4;
+            position: relative;
+        }
+
+        h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.4); 
+        }
+
+        .subtitle {
+            font-size: 1.2em;
+            opacity: 0.8;
+            margin-bottom: 20px;
+        }
+
+        .stats {
+            background: rgba(255, 255, 255, 0.1); 
+            border-radius: 8px;
+            padding: 10px 20px;
+            display: inline-block;
+            font-size: 1em;
+        }
+
+        .user-panel {
+            position: absolute;
+            top: 0;
+            right: 0;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            font-size: 0.9em;
+        }
+
+        .user-info {
+            color: #f4f4f4;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+        }
+
+        .btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .btn-green { background: #3498db; }
+        .btn:hover { opacity: 0.9; }
+
+        .pictures-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 30px;
+            perspective: 1000px;
+        }
+
+        .picture-card {
+            background: #33395d; 
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            overflow: hidden;
+            transition: transform 0.1s;
+            transform-style: preserve-3d;
+        }
+        
+        .picture-image-wrapper {
+            width: 100%;
+            height: 200px;
+            background-color: #2b2b4a; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            cursor: pointer;
+            transform: translateZ(5px);
+        }
+
+        .picture-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain; 
+            display: block;
+        }
+
+
+        .picture-info {
+            padding: 15px;
+            transform: translateZ(20px);
+            color: #f4f4f4;
+        }
+
+        .picture-info h2 {
+            font-size: 1.5em;
+            margin-bottom: 10px;
+            color: #ffffff;
+        }
+
+        .picture-info p {
+            font-size: 0.9em;
+            line-height: 1.6;
+            margin-bottom: 5px;
+        }
+
+        .price {
+            font-weight: bold;
+            color: #2ecc71; 
+            margin-top: 10px;
+            font-size: 1.1em;
+        }
+
+        .owner-name {
+            font-size: 0.85em;
+            color: #bdc3c7;
+            margin-bottom: 10px;
+        }
+        
+        .error { color: #e74c3c; }
+
+        /* ================================================= */
+        /* === СТИЛИ ДЛЯ 3D-ЛАЙТБОКСА === */
+        /* ================================================= */
+        .modal {
+            display: none; 
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.7);
+            padding-top: 60px;
+        }
+        #image-viewer-modal {
+            background-color: rgba(0,0,0,0.95); 
+            padding: 0;
+            align-items: center;
+            justify-content: center;
+            padding-top: 0; /* Переопределение для центрирования */
+        }
+        
+        .image-viewer-content {
+            margin: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 90%;
+            height: 90%;
+            max-width: 900px;
+            max-height: 900px;
+            perspective: 1500px; 
+            transform-style: preserve-3d;
+            cursor: grab; /* Курсор для 3D-вращения */
+        }
+        .image-viewer-content:active {
+            cursor: grabbing;
+        }
+        
+        #viewer-img {
+            width: 100%;
+            height: auto;
+            max-height: 100%;
+            display: block;
+            object-fit: contain;
+            transform: none; 
+            transition: transform 0.1s ease-out;
+            box-shadow: 0 0 50px rgba(0, 0, 0, 0.9);
+            background: #111;
+        }
+        
+        .image-viewer-controls {
+            position: absolute;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            backdrop-filter: blur(5px);
+        }
+        .image-viewer-controls button {
+            background: #fff;
+            color: #333;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1.1em;
+            transition: background 0.3s;
+        }
+        .image-viewer-controls button:hover {
+            background: #3498db;
+            color: #fff;
+        }
+        .control-tip {
+            color: #ecf0f1;
+            font-size: 0.9em;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 8px 15px;
+            border-radius: 5px;
+            margin-right: 15px;
+            display: flex;
+            align-items: center;
+        }
+        .close-viewer {
+            position: absolute;
+            top: 20px;
+            right: 35px;
+            color: #fff;
+            font-size: 40px;
+            font-weight: bold;
+            transition: 0.3s;
+            cursor: pointer;
+        }
+        .modal-content {
+            /* ... (для форм) */
+            background-color: #2c3e50; 
+            color: #f4f4f4;
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 400px;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+            animation: slideIn 0.3s ease-out;
+        }
+    </style>
+</head>
+<body>
+    
+    <div class="parallax-bg">
+        <div class="parallax-item brush1"></div>
+        <div class="parallax-item paint-tube"></div>
+        <div class="parallax-item star"></div>
+        <div class="parallax-item brush2"></div>
+    </div>
+
+    <div class="container">
+        <header>
+            <h1>Art Gallery 🖼️</h1>
+            <p class="subtitle">Добро пожаловать в нашу галерею цифровых картин</p>
+            <div class="stats">
+                Всего картин: <span id="picture-count">0</span>
+            </div>
+            
+            <div class="user-panel">
+                <span id="user-display" class="user-info" style="display: none;"></span>
+                <button id="login-btn" class="btn btn-green">Вход</button>
+                <button id="register-btn" class="btn btn-green">Регистрация</button>
+                <button id="add-picture-btn" class="btn btn-green" style="display: none;">Добавить картину</button>
+                <button id="logout-btn" class="btn" style="display: none;">Выход</button>
+            </div>
+        </header>
+
+        <main id="pictures-container" class="pictures-grid">
+            <h2>Загрузка картин...</h2>
+        </main>
+        
+        <div id="message-container"></div>
+    </div>
+
+    <div id="modal" class="modal">
+        <div id="modal-content" class="modal-content">
+            </div>
+    </div>
+    
+    <div id="image-viewer-modal" class="modal">
+        <span class="close-viewer" id="close-viewer-btn">&times;</span>
+        <div id="image-viewer-content" class="image-viewer-content">
+            <img id="viewer-img" src="" alt="Full size image">
+        </div>
+        <div class="image-viewer-controls">
+            <span class="control-tip">Крутите мышью, Зум:</span>
+            <button id="zoom-in-btn" title="Приблизить по Z">+</button>
+            <button id="zoom-out-btn" title="Отдалить по Z">-</button>
+            <button id="rotate-z-left-btn" title="Поворот влево">↺</button>
+            <button id="rotate-z-right-btn" title="Поворот вправо">↻</button>
+        </div>
+    </div>
+
+
+<script>
+    let sessionInfo = null;
+    let currentUser = null;
+    let currentRole = 'guest';
+
+    // === JS ДЛЯ ПАРАЛЛАКСА ФОНА ===
+    const p_brush1 = document.querySelector('.brush1');
+    const p_paintTube = document.querySelector('.paint-tube');
+    const p_brush2 = document.querySelector('.brush2');
+    const p_star = document.querySelector('.star');
+
+    window.addEventListener('scroll', () => {
+        const scrollY = window.scrollY;
+        if (p_brush1) p_brush1.style.transform = `translateY(${scrollY * 0.2}px)`;
+        if (p_paintTube) p_paintTube.style.transform = `translateY(${scrollY * 0.5}px) rotate(15deg)`;
+        if (p_brush2) p_brush2.style.transform = `translateY(${scrollY * 0.3}px)`;
+        if (p_star) p_star.style.transform = `translateY(${scrollY * 0.1}px)`;
+    });
+    
+    // =================================================
+    // === JS ДЛЯ ИММЕРСИВНОГО 3D-ЛАЙТБОКСА (Мышь) ===
+    // =================================================
+    const imageViewerModal = document.getElementById('image-viewer-modal');
+    const viewerContent = document.getElementById('image-viewer-content');
+    const viewerImg = document.getElementById('viewer-img');
+    const closeViewerBtn = document.getElementById('close-viewer-btn');
+
+    let currentZoom = 1;
+    let currentRotationX = 0;
+    let currentRotationY = 0;
+    let currentRotationZ = 0;
+    let currentTranslateZ = 0; 
+
+    let isDragging = false;
+    let startX, startY;
+    let rotationSensitivity = 0.5;
+
+    function updateTransform() {
+        viewerImg.style.transform = 
+            `translateZ(${currentTranslateZ}px) 
+             scale(${currentZoom}) 
+             rotateX(${currentRotationX}deg) 
+             rotateY(${currentRotationY}deg) 
+             rotateZ(${currentRotationZ}deg)`;
+    }
+
+    function openImageViewer(src) {
+        viewerImg.src = src;
+        currentZoom = 1;
+        currentRotationX = 0;
+        currentRotationY = 0;
+        currentRotationZ = 0;
+        currentTranslateZ = 0; 
+        updateTransform();
+        imageViewerModal.style.display = 'flex'; 
+    }
+
+    function closeImageViewer() {
+        imageViewerModal.style.display = 'none';
+        viewerImg.src = '';
+    }
+
+    // === УПРАВЛЕНИЕ МЫШЬЮ (3D вращение) ===
+    viewerContent.addEventListener('mousedown', (e) => {
+        // Убедимся, что клик не был на элементах управления внизу
+        if (e.target.closest('.image-viewer-controls')) return; 
+        
+        e.preventDefault();
+        isDragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        viewerContent.style.cursor = 'grabbing';
+    });
+
+    // Обработчик mousemove должен быть на всем модальном окне, чтобы не терять захват
+    imageViewerModal.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+
+        const deltaX = e.clientX - startX;
+        const deltaY = e.clientY - startY;
+
+        // По оси Y (вертикальное движение мыши) вращаем по X
+        currentRotationX -= deltaY * rotationSensitivity * 0.1;
+        // По оси X (горизонтальное движение мыши) вращаем по Y
+        currentRotationY += deltaX * rotationSensitivity * 0.1;
+
+        // Ограничиваем вращение, чтобы не инвертировать модель
+        currentRotationX = Math.max(-90, Math.min(90, currentRotationX));
+
+        updateTransform();
+        
+        startX = e.clientX;
+        startY = e.clientY;
+    });
+
+    imageViewerModal.addEventListener('mouseup', () => {
+        isDragging = false;
+        viewerContent.style.cursor = 'grab';
+    });
+
+    imageViewerModal.addEventListener('mouseleave', () => {
+        isDragging = false;
+        viewerContent.style.cursor = 'grab';
+    });
+
+
+    // Слушатели для Zoom и Z-Rotation
+    closeViewerBtn.addEventListener('click', closeImageViewer);
+    
+    document.getElementById('zoom-in-btn').addEventListener('click', () => {
+        currentZoom = Math.min(currentZoom + 0.1, 3);
+        currentTranslateZ += 50; 
+        updateTransform();
+    });
+    
+    document.getElementById('zoom-out-btn').addEventListener('click', () => {
+        currentZoom = Math.max(currentZoom - 0.1, 0.5);
+        currentTranslateZ -= 50;
+        updateTransform();
+    });
+    
+    document.getElementById('rotate-z-left-btn').addEventListener('click', () => {
+        currentRotationZ -= 90;
+        updateTransform();
+    });
+    document.getElementById('rotate-z-right-btn').addEventListener('click', () => {
+        currentRotationZ += 90;
+        updateTransform();
+    });
+    
+    imageViewerModal.addEventListener('click', function(event) {
+        if (event.target === this) {
+            closeImageViewer();
+        }
+    });
+    // --- Конец 3D-ЛАЙТБОКСА ---
+
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadPictures();
+        checkLoginStatus();
+        setupEventListeners();
+    });
+
+    // === УТИЛИТЫ ===
+    function showMessage(type, message) {
+        const container = document.getElementById('message-container');
+        const alert = document.createElement('div');
+        alert.classList.add('alert', type);
+        alert.textContent = message;
+        container.innerHTML = '';
+        container.appendChild(alert);
+        setTimeout(() => alert.remove(), 5000);
+    }
+    function showError(message) { showMessage('error', message); }
+    function showSuccess(message) { showMessage('success', message); }
+    function escapeHtml(text) {
+        if (typeof text !== 'string') return text;
+        return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+    
+    // ФОРМАТИРОВАНИЕ ЦЕНЫ С ПРОВЕРКОЙ
+    function formatPrice(price) {
+        if (typeof price === 'number' && !isNaN(price) && price >= 0) {
+            return price.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+        }
+        return 'N/A';
+    }
+
+    // === МОДАЛЬНОЕ ОКНО (Формы) ===
+    function openModal(contentHtml) { 
+        document.getElementById('modal-content').innerHTML = contentHtml;
+        document.getElementById('modal').style.display = 'block';
+    }
+    function closeModal() { 
+        document.getElementById('modal').style.display = 'none';
+        document.getElementById('modal-content').innerHTML = '';
+    }
+    document.getElementById('modal').addEventListener('click', function(event) { 
+        if (event.target === this) closeModal();
+    });
+
+    // === АУТЕНТИФИКАЦИЯ И АВТОРИЗАЦИЯ (Заглушки, нужно реализовать) ===
+    async function fetchSession() {
+        try {
+            const response = await fetch('/api/auth/session');
+            if (!response.ok) throw new Error('Ошибка при получении сессии');
+            return await response.json();
+        } catch (error) {
+            console.error('Ошибка сессии:', error);
+            return { isAuthenticated: false };
+        }
+    }
+    async function checkLoginStatus() {
+        sessionInfo = await fetchSession();
+        updateUIForLoginState();
+    }
+    function updateUIForUser(session) {
+        document.getElementById('user-display').textContent = `Привет, ${session.username} (${session.role})`;
+        document.getElementById('user-display').style.display = 'inline';
+        document.getElementById('login-btn').style.display = 'none';
+        document.getElementById('register-btn').style.display = 'none';
+        document.getElementById('logout-btn').style.display = 'inline';
+        document.getElementById('add-picture-btn').style.display = 'inline';
+    }
+    function updateUIForGuest() {
+        document.getElementById('user-display').style.display = 'none';
+        document.getElementById('login-btn').style.display = 'inline';
+        document.getElementById('register-btn').style.display = 'inline';
+        document.getElementById('logout-btn').style.display = 'none';
+        document.getElementById('add-picture-btn').style.display = 'none';
+    }
+    function updateUIForLoginState() {
+        if (sessionInfo && sessionInfo.isAuthenticated) {
+            updateUIForUser(sessionInfo);
+        } else {
+            updateUIForGuest();
+        }
+        // Обновляем видимость кнопок "Удалить" после загрузки/обновления
+        document.querySelectorAll('.picture-card').forEach(card => {
+            const deleteBtn = card.querySelector('.delete-btn');
+            if (deleteBtn) {
+                const pictureId = deleteBtn.dataset.pictureId;
+                const pictureData = currentPictures.find(p => p._id === pictureId);
+                
+                const isOwner = sessionInfo && pictureData && pictureData.userId && typeof pictureData.userId === 'object' && (sessionInfo.userId === pictureData.userId._id);
+                const isAdmin = sessionInfo && sessionInfo.role === 'admin';
+                
+                if (isOwner || isAdmin) {
+                    deleteBtn.style.display = 'block';
+                } else {
+                    deleteBtn.style.display = 'none';
+                }
+            }
+        });
+    }
+    async function handleAuth(event, endpoint) {
+        event.preventDefault();
+        const form = event.target;
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+
+        try {
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const result = await response.json();
+            closeModal();
+            if (response.ok) {
+                showSuccess(`Добро пожаловать, ${result.username}!`);
+                sessionInfo = { isAuthenticated: true, userId: result.id, username: result.username, role: result.role };
+                updateUIForLoginState();
+                loadPictures(); // Обновляем список, чтобы показать кнопки "Удалить"
+            } else {
+                showError(result.error || 'Ошибка аутентификации');
+            }
+        } catch (error) {
+            console.error('Ошибка сети/сервера:', error);
+            closeModal();
+            showError('Ошибка связи с сервером.');
+        }
+    }
+
+
+    // === КАРТИНЫ (CRUD) ===
+    let currentPictures = [];
+
+    async function loadPictures() {
+        try {
+            sessionInfo = await fetchSession(); 
+            
+            const picturesContainer = document.getElementById('pictures-container');
+            picturesContainer.innerHTML = '<h2>Загрузка картин...</h2>';
+
+            const response = await fetch('/api/pictures'); 
+            if (!response.ok) {
+                throw new Error('Ошибка при загрузке данных о картинах.');
+            }
+
+            currentPictures = await response.json(); // Сохраняем для логики удаления
+            
+            picturesContainer.innerHTML = '';
+            document.getElementById('picture-count').textContent = currentPictures.length;
+            
+            if (currentPictures.length === 0) {
+                picturesContainer.innerHTML = '<p>Пока нет картин в галерее.</p>';
+            } else {
+                currentPictures.forEach(picture => {
+                    picturesContainer.appendChild(displayPicture(picture)); 
+                });
+            }
+            
+            applyTiltEffect();
+            
+            updateUIForLoginState(); 
+            
+        } catch (error) {
+            console.error('Ошибка загрузки картин:', error);
+            document.getElementById('pictures-container').innerHTML = '<p class="error">Ошибка загрузки данных.</p>';
+            updateUIForLoginState(); 
+        }
+    }
+
+
+    // ⚠️ ФИКС: Надежная логика отображения всех полей, предотвращающая undefined
+    function displayPicture(picture) {
+        // Проверка и замещение для всех полей
+        const title = escapeHtml(picture.title ?? 'Нет названия');
+        const artist = escapeHtml(picture.artist ?? 'Неизвестный');
+        const year = picture.year ?? 'N/A';
+        const style = escapeHtml(picture.style ?? 'Не указан');
+        const priceValue = picture.price ?? 'N/A';
+        
+        // Безопасная проверка для имени владельца
+        const ownerName = (
+            picture.userId && 
+            typeof picture.userId === 'object' && 
+            picture.userId.username
+        ) 
+            ? escapeHtml(picture.userId.username) 
+            : 'Администратор/Система';
+        
+        const cardDiv = document.createElement('div');
+        cardDiv.classList.add('picture-card');
+        cardDiv.setAttribute('data-id', picture._id); 
+
+        // Используем проверенные значения
+        cardDiv.innerHTML = `
+            <div class="picture-image-wrapper">
+                <img src="${escapeHtml(picture.imageUrl ?? '')}" alt="${title}">
+            </div>
+            <div class="picture-info">
+                <h2>${title}</h2>
+                <p><strong>Художник:</strong> ${artist} (${year})</p>
+                <p><strong>Стиль:</strong> ${style}</p>
+                <p class="price">Цена: ${priceValue === 'N/A' ? 'Цена не указана' : formatPrice(priceValue) + ' ₽'}</p>
+                
+                <p class="owner-name">
+                    Владелец: <strong>${ownerName}</strong>
+                </p>
+                
+                <button 
+                    class="delete-btn" 
+                    data-picture-id="${picture._id}" 
+                    title="Удалить картину"
+                    style="display: none;" 
+                >
+                    Удалить
+                </button>
+            </div>
+        `;
+
+        // Слушатель для лайтбокса (на обертку картинки)
+        const imgWrapper = cardDiv.querySelector('.picture-image-wrapper');
+        // ⚠️ КАРТИНА НЕ ОТКРЫВАЛАСЬ, Т.К. ДО ЭТОГО МОМЕНТА ВЫСКАКИВАЛА ОШИБКА
+        // Теперь, когда данные стабильны, этот слушатель будет работать
+        imgWrapper.addEventListener('click', () => {
+            if (picture.imageUrl) {
+                openImageViewer(picture.imageUrl);
+            } else {
+                showError('Не удалось загрузить изображение: отсутствует URL.');
+            }
+        });
+
+        // --- Логика кнопки "Удалить" ---
+        const deleteBtn = cardDiv.querySelector('.delete-btn');
+        deleteBtn.addEventListener('click', (event) => {
+            event.stopPropagation();
+            if (confirm(`Вы уверены, что хотите удалить картину "${title}"?`)) {
+                deletePicture(picture._id);
+            }
+        });
+
+        return cardDiv;
+    }
+
+    async function deletePicture(pictureId) {
+        try {
+            const response = await fetch(`/api/pictures/${pictureId}`, { method: 'DELETE' });
+            const data = await response.json();
+            if (response.ok) {
+                showSuccess(data.message);
+                loadPictures();
+            } else {
+                showError(data.error || 'Ошибка удаления картины');
+            }
+        } catch (error) {
+            showError('Ошибка связи с сервером при удалении.');
+        }
+    }
+    
+    async function handleAddPicture(event) {
+        event.preventDefault();
+        const form = event.target;
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+
+        // Дополнительная проверка на числовые поля
+        data.year = parseInt(data.year);
+        data.price = parseFloat(data.price);
+
+        try {
+            const response = await fetch('/api/pictures', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const result = await response.json();
+            closeModal();
+            if (response.ok) {
+                showSuccess(`Картина "${result.title}" успешно добавлена.`);
+                loadPictures();
+            } else {
+                showError(result.error || 'Ошибка при добавлении картины');
+            }
+        } catch (error) {
+            console.error('Ошибка добавления:', error);
+            closeModal();
+            showError('Ошибка связи с сервером при добавлении.');
+        }
+    }
+
+
+    // JS для 3D-эффекта наклона превью (без изменений)
+    function applyTiltEffect() {
+        const cards = document.querySelectorAll('.picture-card');
+        
+        cards.forEach(card => {
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left - rect.width / 2;
+                const y = e.clientY - rect.top - rect.height / 2;
+                
+                const rotateX = -y / 20; 
+                const rotateY = x / 20;
+                
+                card.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.03)`;
+            });
+            
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'rotateX(0deg) rotateY(0deg) scale(1)';
+            });
+        });
+    }
+
+
+    // === ОБРАБОТЧИКИ СОБЫТИЙ ===
+    function setupEventListeners() {
+        document.getElementById('login-btn').addEventListener('click', () => {
+            const html = `
+                <h2>Вход</h2>
+                <form id="login-form">
+                    <div class="form-group"><label>Логин:</label><input type="text" name="username" required></div>
+                    <div class="form-group"><label>Пароль:</label><input type="password" name="password" required></div>
+                    <button type="submit" class="btn btn-green" style="width: 100%;">Войти</button>
+                </form>
+                <span class="close" onclick="closeModal()">&times;</span>
+            `;
+            openModal(html);
+            document.getElementById('login-form').addEventListener('submit', (e) => handleAuth(e, '/api/auth/login'));
+        });
+
+        document.getElementById('register-btn').addEventListener('click', () => {
+            const html = `
+                <h2>Регистрация</h2>
+                <form id="register-form">
+                    <div class="form-group"><label>Логин:</label><input type="text" name="username" required></div>
+                    <div class="form-group"><label>Пароль:</label><input type="password" name="password" required></div>
+                    <input type="hidden" name="role" value="user">
+                    <button type="submit" class="btn btn-green" style="width: 100%;">Зарегистрироваться</button>
+                </form>
+                <span class="close" onclick="closeModal()">&times;</span>
+            `;
+            openModal(html);
+            document.getElementById('register-form').addEventListener('submit', (e) => handleAuth(e, '/api/auth/register'));
+        });
+
+        document.getElementById('logout-btn').addEventListener('click', async () => {
+            try {
+                const response = await fetch('/api/auth/logout', { method: 'POST' });
+                const data = await response.json();
+                if (response.ok) {
+                    showSuccess(data.message);
+                    sessionInfo = null;
+                    loadPictures(); 
+                    updateUIForGuest(); 
+                } else {
+                    showError(data.error || 'Ошибка выхода');
+                }
+            } catch (error) {
+                console.error('Ошибка выхода:', error);
+                showError('Ошибка связи с сервером при выходе.');
+            }
+        });
+
+        document.getElementById('add-picture-btn').addEventListener('click', () => {
+            const html = `
+                <h2>Добавить новую картину</h2>
+                <form id="add-picture-form">
+                    <div class="form-group"><label>Название:</label><input type="text" name="title" required></div>
+                    <div class="form-group"><label>Художник:</label><input type="text" name="artist" required></div>
+                    <div class="form-group"><label>Год:</label><input type="number" name="year" min="1" max="2050" required></div>
+                    <div class="form-group"><label>URL Изображения:</label><input type="url" name="imageUrl" required></div>
+                    <div class="form-group"><label>Стиль:</label><input type="text" name="style"></div>
+                    <div class="form-group"><label>Цена (₽):</label><input type="number" name="price" step="0.01" min="0" required></div>
+                    <div class="form-group"><label>Размер:</label><input type="text" name="size"></div>
+                    <div class="form-group"><label>Описание:</label><textarea name="description"></textarea></div>
+                    <button type="submit" class="btn btn-green" style="width: 100%;">Добавить</button>
+                </form>
+                <span class="close" onclick="closeModal()">&times;</span>
+            `;
+            openModal(html);
+            document.getElementById('add-picture-form').addEventListener('submit', handleAddPicture);
+        });
+    }
+</script>
+</body>
+</html>
